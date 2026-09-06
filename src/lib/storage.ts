@@ -13,6 +13,14 @@ import { todayStr } from './date'
 
 const listeners = new Set<() => void>()
 
+function createId(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+
+  const values = new Uint32Array(4)
+  crypto.getRandomValues(values)
+  return Array.from(values, (value) => value.toString(16).padStart(8, '0')).join('-')
+}
+
 function load(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -68,7 +76,7 @@ export function updateSettings(patch: Partial<Settings>) {
 }
 
 export function addMedication(input: Omit<Medication, 'id'>) {
-  const med: Medication = { ...input, id: crypto.randomUUID() }
+  const med: Medication = { ...input, id: createId() }
   emit({ ...state, medications: [...state.medications, med] })
 }
 
@@ -92,7 +100,7 @@ export function logDose(medicationId: string, date = todayStr()) {
     doseLogs: [
       ...state.doseLogs,
       {
-        id: crypto.randomUUID(),
+        id: createId(),
         medicationId,
         date,
         takenAt: new Date().toISOString(),
