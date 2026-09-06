@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "PingFang SC", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    sans-serif;
+  --color-paper: #f4efe6;
+  --color-card: #fffdf8;
+  --color-ink: #1f2a24;
+  --color-muted: #6d7a72;
+  --color-line: #e6ddd0;
+  --color-teal: #2a9d8f;
+  --color-teal-dark: #1e7d72;
+  --color-coral: #e07a5f;
+  --color-gold: #e9c46a;
+  --color-mint: #b7e4c7;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background: var(--color-paper);
+}
+
+body {
+  margin: 0;
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.safe-top {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
