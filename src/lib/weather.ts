@@ -116,3 +116,62 @@ export async function fetchWeather(opts: {
     tempDrop,
   }
 }
+
+export async function fetchWeatherRange(opts: {
+  startDate: string
+  endDate: string
+  city: string
+  latitude: number
+  longitude: number
+}): Promise<WeatherLog[]> {
+  const url = new URL('https://api.open-meteo.com/v1/forecast')
+  url.searchParams.set('latitude', String(opts.latitude))
+  url.searchParams.set('longitude', String(opts.longitude))
+  url.searchParams.set(
+    'daily',
+    'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean',
+  )
+  url.searchParams.set('timezone', 'auto')
+  const prelude = addDays(opts.startDate, -1)
+  url.searchParams.set('start_date', prelude)
+  url.searchParams.set('end_date', opts.endDate)
+
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('天气获取失败')
+  const data = (await res.json()) as {
+    daily: {
+      time: string[]
+      weather_code: number[]
+      temperature_2m_max: number[]
+      temperature_2m_min: number[]
+      precipitation_sum: number[]
+      relative_humidity_2m_mean: number[]
+    }
+  }
+
+  const mins = new Map<string, number>()
+  data.daily.time.forEach((day, index) => {
+    mins.set(day, data.daily.temperature_2m_min[index])
+  })
+
+  const logs: WeatherLog[] = []
+  data.daily.time.forEach((day, index) => {
+    if (day < opts.startDate || day > opts.endDate) return
+    const tempMin = data.daily.temperature_2m_min[index]
+    const precipitation = data.daily.precipitation_sum[index] ?? 0
+    const weatherCode = data.daily.weather_code[index]
+    const prevMin = mins.get(addDays(day, -1))
+    logs.push({
+      date: day,
+      city: opts.city,
+      tempMax: Math.round(data.daily.temperature_2m_max[index]),
+      tempMin: Math.round(tempMin),
+      humidity: Math.round(data.daily.relative_humidity_2m_mean[index] ?? 0),
+      weatherCode,
+      conditionLabel: conditionLabel(weatherCode),
+      precipitation,
+      tempDrop: typeof prevMin === 'number' && prevMin - tempMin >= 5,
+    })
+  })
+  return logs
+}

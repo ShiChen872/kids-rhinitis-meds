@@ -131,10 +131,14 @@ export function updateSymptoms(date: string, patch: Partial<SymptomLog>) {
 }
 
 export function saveWeather(log: WeatherLog) {
-  emit({
-    ...state,
-    weatherLogs: { ...state.weatherLogs, [log.date]: log },
-  })
+  saveWeathers([log])
+}
+
+export function saveWeathers(logs: WeatherLog[]) {
+  if (logs.length === 0) return
+  const weatherLogs = { ...state.weatherLogs }
+  for (const log of logs) weatherLogs[log.date] = log
+  emit({ ...state, weatherLogs })
 }
 
 export function dosesOn(date: string, medicationId: string) {

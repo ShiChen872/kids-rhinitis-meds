@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react'
 import { Card } from '../components/Screen'
-import { addDays, formatLongDate, formatTime, todayStr } from '../lib/date'
+import { WeatherCompare } from '../components/WeatherCompare'
+import { formatLongDate, formatTime, todayStr } from '../lib/date'
 import {
-  getState,
   logDose,
-  saveWeather,
   undoLastDose,
   updateSymptoms,
   useAppState,
@@ -20,7 +18,8 @@ import {
   type SymptomKey,
   type SymptomLevel,
 } from '../lib/types'
-import { fetchWeather, isRainy } from '../lib/weather'
+import { useWeatherBackfill } from '../lib/useWeatherBackfill'
+import { isRainy } from '../lib/weather'
 
 export function TodayPage({ onGoMeds }: { onGoMeds: () => void }) {
   const { medications, doseLogs, symptomLogs, weatherLogs, settings } = useAppState()
@@ -28,36 +27,7 @@ export function TodayPage({ onGoMeds }: { onGoMeds: () => void }) {
   const weather = weatherLogs[date]
   const symptoms = symptomLogs[date]
   const activeMeds = medications.filter((m) => m.active)
-  const [weatherError, setWeatherError] = useState('')
-
-  useEffect(() => {
-    let cancelled = false
-    const { city, latitude, longitude } = settings
-    if (latitude == null || longitude == null) return
-    const existing = getState().weatherLogs[date]
-    if (existing && existing.city === city) return
-
-    fetchWeather({
-      date,
-      city,
-      latitude,
-      longitude,
-      yesterdayMin: getState().weatherLogs[addDays(date, -1)]?.tempMin,
-    })
-      .then((log) => {
-        if (!cancelled) {
-          saveWeather(log)
-          setWeatherError('')
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setWeatherError('天气暂时拉不到，不影响打卡')
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [date, settings.city, settings.latitude, settings.longitude])
+  const weatherError = useWeatherBackfill()
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -92,6 +62,8 @@ export function TodayPage({ onGoMeds }: { onGoMeds: () => void }) {
             <p className="text-sm text-muted">{weatherError || '正在获取天气…'}</p>
           )}
         </Card>
+
+        <WeatherCompare weatherLogs={weatherLogs} symptomLogs={symptomLogs} />
 
         <div>
           <h2 className="mb-2 px-1 text-sm font-medium text-muted">按医嘱打卡</h2>

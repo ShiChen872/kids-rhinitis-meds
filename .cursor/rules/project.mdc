@@ -9,14 +9,14 @@ alwaysApply: true
 
 ## 分工
 
-- **GitHub `main`**：源码。Cursor 这个会话改代码并 push。
-- **Hermes（新加坡轻量）**：从 GitHub pull，在服务器 `npm ci` + `scripts/server-update.sh` 发布。
-- **太太访问**：`http://43.134.226.112/yao/`（不要 GitHub Pages，国内不稳）
-- **数据**：手机 `localStorage` key `rhinitis-log-v1`，服务器无打卡数据
+- **GitHub `main`**：源码。Cursor 改并 push。GitHub 已配好。
+- **Hermes**：可直接从仓库远程更新腾讯云 `/yao/`（`DEPLOY.md`「以后更新」）。轻量已对接，入口已测过可用。
+- **太太访问**：`http://43.134.226.112/yao/`（不要 GitHub Pages）
+- **数据**：手机 `localStorage` key `rhinitis-log-v1`；HTTP 下用 `createId()`，不要用 `crypto.randomUUID`
 
 ## 产品
 
-三页：今日（打卡/症状/天气）/ 日历 / 药物。Safari 加到主屏幕，不要用微信内置浏览器。
+三页：今日（打卡/症状/天气/近7天对照）/ 日历（对照 + 变天标记）/ 药物。Safari 加到主屏幕，不要用微信内置浏览器。
 
 ## 不要做
 

@@ -50,3 +50,12 @@ export function addDays(date: string, delta: number): string {
   d.setDate(d.getDate() + delta)
   return todayStr(d)
 }
+
+export function lastNDates(n: number, end = todayStr()): string[] {
+  return Array.from({ length: n }, (_, i) => addDays(end, -(n - 1 - i)))
+}
+
+export function formatShortDate(date: string): string {
+  const d = parseDate(date)
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
