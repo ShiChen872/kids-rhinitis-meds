@@ -10,7 +10,7 @@ import {
   type SymptomLog,
   type WeatherLog,
 } from './types'
-import { todayStr } from './date'
+import { setLocalTime, takenAtOnDate, todayStr } from './date'
 
 const listeners = new Set<() => void>()
 
@@ -115,9 +115,20 @@ export function logDose(medicationId: string, date = todayStr()) {
         id: createId(),
         medicationId,
         date,
-        takenAt: new Date().toISOString(),
+        takenAt: takenAtOnDate(date),
       },
     ],
+  })
+}
+
+export function updateDoseTime(id: string, hhmm: string) {
+  const dose = state.doseLogs.find((item) => item.id === id)
+  if (!dose) return
+  const takenAt = setLocalTime(dose.date, hhmm)
+  if (!takenAt) return
+  emit({
+    ...state,
+    doseLogs: state.doseLogs.map((item) => (item.id === id ? { ...item, takenAt } : item)),
   })
 }
 

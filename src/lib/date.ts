@@ -22,6 +22,24 @@ export function formatTime(iso: string): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+export function setLocalTime(date: string, hhmm: string): string | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim())
+  if (!match) return null
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (hours > 23 || minutes > 59) return null
+  const d = parseDate(date)
+  d.setHours(hours, minutes, 0, 0)
+  return d.toISOString()
+}
+
+export function takenAtOnDate(date: string, from = new Date()): string {
+  if (date === todayStr(from)) return from.toISOString()
+  const d = parseDate(date)
+  d.setHours(from.getHours(), from.getMinutes(), 0, 0)
+  return d.toISOString()
+}
+
 export function shiftMonth(year: number, month: number, delta: number): { year: number; month: number } {
   const d = new Date(year, month - 1 + delta, 1)
   return { year: d.getFullYear(), month: d.getMonth() + 1 }

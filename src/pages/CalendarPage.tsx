@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { DoseCheckIn } from '../components/DoseCheckIn'
 import { Card, Screen } from '../components/Screen'
 import { WeatherCompare } from '../components/WeatherCompare'
-import { formatLongDate, formatTime, monthGrid, shiftMonth, todayStr } from '../lib/date'
+import { formatLongDate, monthGrid, shiftMonth, todayStr } from '../lib/date'
 import { useAppState } from '../lib/storage'
 import {
-  FORM_LABELS,
   LEVEL_LABELS,
   OVERALL_LABELS,
   SYMPTOM_KEYS,
@@ -25,7 +25,7 @@ function levelColor(level: number, selected: boolean) {
   return 'bg-coral'
 }
 
-export function CalendarPage() {
+export function CalendarPage({ focusDate }: { focusDate?: string | null }) {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
@@ -34,6 +34,14 @@ export function CalendarPage() {
   const cells = useMemo(() => monthGrid(year, month), [year, month])
   const today = todayStr()
   useWeatherBackfill()
+
+  useEffect(() => {
+    if (!focusDate) return
+    const [y, m] = focusDate.split('-').map(Number)
+    setYear(y)
+    setMonth(m)
+    setSelected(focusDate)
+  }, [focusDate])
 
   const detailDate = selected
   const detailWeather = detailDate ? weatherLogs[detailDate] : undefined
@@ -131,37 +139,19 @@ export function CalendarPage() {
             <p className="mt-2 text-sm text-muted">当天没有天气记录</p>
           )}
 
-          <div className="mt-4 space-y-2">
-            {medications.length === 0 ? (
-              <p className="text-sm text-muted">还没有药物档案</p>
+          <div className="mt-4">
+            {detailDate > today ? (
+              <p className="text-sm text-muted">还没到这一天，不能补记。</p>
             ) : (
-              medications.map((med) => {
-                const logs = doseLogs
-                  .filter((d) => d.medicationId === med.id && d.date === detailDate)
-                  .sort((a, b) => a.takenAt.localeCompare(b.takenAt))
-                return (
-                  <div key={med.id} className="rounded-2xl bg-paper px-3 py-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium">
-                        {med.name}
-                        <span className="ml-2 text-muted">
-                          {FORM_LABELS[med.form]}
-                        </span>
-                      </p>
-                      <p className="text-sm">
-                        {logs.length}/{med.timesPerDay}
-                      </p>
-                    </div>
-                    {logs.length > 0 ? (
-                      <p className="mt-1 text-xs text-muted">
-                        {logs.map((d) => formatTime(d.takenAt)).join('  ·  ')}
-                      </p>
-                    ) : (
-                      <p className="mt-1 text-xs text-muted">当天未打卡</p>
-                    )}
-                  </div>
-                )
-              })
+              <>
+                <p className="mb-2 text-xs text-muted">可补记用药；点钟点可改时间。</p>
+                <DoseCheckIn
+                  date={detailDate}
+                  medications={medications}
+                  doseLogs={doseLogs}
+                  canEdit
+                />
+              </>
             )}
           </div>
 

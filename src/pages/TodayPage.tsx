@@ -1,15 +1,12 @@
 import { Card } from '../components/Screen'
+import { DoseCheckIn } from '../components/DoseCheckIn'
 import { WeatherCompare } from '../components/WeatherCompare'
-import { bottleStatus, bottleSummary } from '../lib/bottle'
-import { formatLongDate, formatTime, todayStr } from '../lib/date'
+import { addDays, formatLongDate, todayStr } from '../lib/date'
 import {
-  logDose,
-  undoLastDose,
   updateSymptoms,
   useAppState,
 } from '../lib/storage'
 import {
-  FORM_LABELS,
   LEVEL_LABELS,
   OVERALL_LABELS,
   OVERALL_OPTIONS,
@@ -22,13 +19,24 @@ import {
 import { useWeatherBackfill } from '../lib/useWeatherBackfill'
 import { isRainy } from '../lib/weather'
 
-export function TodayPage({ onGoMeds }: { onGoMeds: () => void }) {
+export function TodayPage({
+  onGoMeds,
+  onGoYesterday,
+}: {
+  onGoMeds: () => void
+  onGoYesterday: () => void
+}) {
   const { medications, doseLogs, symptomLogs, weatherLogs, settings } = useAppState()
   const date = todayStr()
+  const yesterday = addDays(date, -1)
   const weather = weatherLogs[date]
   const symptoms = symptomLogs[date]
   const activeMeds = medications.filter((m) => m.active)
   const weatherError = useWeatherBackfill()
+  const yesterdayIncomplete = activeMeds.some((med) => {
+    const used = doseLogs.filter((d) => d.medicationId === med.id && d.date === yesterday).length
+    return used < med.timesPerDay
+  })
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -80,60 +88,25 @@ export function TodayPage({ onGoMeds }: { onGoMeds: () => void }) {
               </button>
             </Card>
           ) : (
-            <div className="space-y-3">
-              {activeMeds.map((med) => {
-                const todays = doseLogs
-                  .filter((d) => d.medicationId === med.id && d.date === date)
-                  .sort((a, b) => a.takenAt.localeCompare(b.takenAt))
-                const used = todays.length
-                const over = used > med.timesPerDay
-                const bottle = bottleStatus(med, doseLogs)
-                return (
-                  <Card key={med.id}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold">{med.name}</p>
-                        <p className="mt-1 text-sm text-muted">
-                          {FORM_LABELS[med.form]} · {med.doseLabel || '按医嘱'} · 每天 {med.timesPerDay} 次
-                        </p>
-                      </div>
-                      <p className={`text-sm font-medium ${over ? 'text-coral' : 'text-teal-dark'}`}>
-                        已用 {used}/{med.timesPerDay}
-                      </p>
-                    </div>
-                    {over ? <p className="mt-2 text-xs text-coral">已超医嘱，仍可记录</p> : null}
-                    {todays.length > 0 ? (
-                      <p className="mt-2 text-xs text-muted">
-                        {todays.map((d) => formatTime(d.takenAt)).join('  ·  ')}
-                      </p>
-                    ) : null}
-                    {bottle ? (
-                      <p className={`mt-2 text-xs ${bottle.low ? 'text-coral' : 'text-muted'}`}>
-                        {bottleSummary(bottle)}
-                      </p>
-                    ) : null}
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => logDose(med.id, date)}
-                        className="min-h-12 rounded-2xl bg-teal text-base font-medium text-white active:bg-teal-dark"
-                      >
-                        记一次
-                      </button>
-                      <button
-                        type="button"
-                        disabled={used === 0}
-                        onClick={() => undoLastDose(med.id, date)}
-                        className="min-h-12 rounded-2xl border border-line bg-paper text-base font-medium disabled:opacity-40"
-                      >
-                        撤销
-                      </button>
-                    </div>
-                  </Card>
-                )
-              })}
-            </div>
+            <DoseCheckIn
+              date={date}
+              medications={activeMeds}
+              doseLogs={doseLogs}
+              canEdit
+              showBottle
+            />
           )}
+          {activeMeds.length > 0 && yesterdayIncomplete ? (
+            <button
+              type="button"
+              onClick={onGoYesterday}
+              className="mt-3 min-h-12 w-full rounded-2xl bg-gold/40 text-base font-medium"
+            >
+              昨天还有药没记完，去补记
+            </button>
+          ) : activeMeds.length > 0 ? (
+            <p className="mt-3 px-1 text-xs text-muted">漏记了去日历点那一天；点钟点可改时间。</p>
+          ) : null}
         </div>
 
         <Card>
