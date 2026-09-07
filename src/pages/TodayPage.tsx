@@ -1,21 +1,9 @@
 import { Card } from '../components/Screen'
 import { DoseCheckIn } from '../components/DoseCheckIn'
+import { SymptomEditor } from '../components/SymptomEditor'
 import { WeatherCompare } from '../components/WeatherCompare'
 import { addDays, formatLongDate, todayStr } from '../lib/date'
-import {
-  updateSymptoms,
-  useAppState,
-} from '../lib/storage'
-import {
-  LEVEL_LABELS,
-  OVERALL_LABELS,
-  OVERALL_OPTIONS,
-  SYMPTOM_KEYS,
-  SYMPTOM_LABELS,
-  type Overall,
-  type SymptomKey,
-  type SymptomLevel,
-} from '../lib/types'
+import { useAppState } from '../lib/storage'
 import { useWeatherBackfill } from '../lib/useWeatherBackfill'
 import { isRainy } from '../lib/weather'
 
@@ -105,99 +93,16 @@ export function TodayPage({
               昨天还有药没记完，去补记
             </button>
           ) : activeMeds.length > 0 ? (
-            <p className="mt-3 px-1 text-xs text-muted">漏记了去日历点那一天；点钟点可改时间。</p>
+            <p className="mt-3 px-1 text-xs text-muted">漏记了去日历点那一天，用药和症状都能补。</p>
           ) : null}
         </div>
 
         <Card>
           <h2 className="text-sm font-medium text-muted">今日感觉</h2>
-          <div className="mt-3 space-y-4">
-            {SYMPTOM_KEYS.map((key) => (
-              <SymptomRow
-                key={key}
-                label={SYMPTOM_LABELS[key]}
-                value={(symptoms?.[key] ?? 0) as SymptomLevel}
-                onChange={(level) => updateSymptoms(date, { [key]: level } as Record<SymptomKey, SymptomLevel>)}
-              />
-            ))}
+          <div className="mt-3">
+            <SymptomEditor date={date} log={symptoms} />
           </div>
-          <div className="mt-5">
-            <p className="text-sm text-muted">整体</p>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {OVERALL_OPTIONS.map((opt) => {
-                const active = symptoms?.overall === opt
-                return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() =>
-                      updateSymptoms(date, { overall: (active ? null : opt) as Overall | null })
-                    }
-                    className={`min-h-11 rounded-2xl text-sm font-medium ${
-                      active ? 'bg-teal text-white' : 'bg-paper text-ink'
-                    }`}
-                  >
-                    {OVERALL_LABELS[opt]}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-          <label className="mt-4 block">
-            <span className="text-sm text-muted">备注</span>
-            <textarea
-              value={symptoms?.note ?? ''}
-              onChange={(e) => updateSymptoms(date, { note: e.target.value })}
-              rows={2}
-              placeholder="可选，比如夜里咳了几声"
-              className="mt-2 w-full resize-none rounded-2xl border border-line bg-paper px-3 py-3 text-base outline-none"
-            />
-          </label>
         </Card>
-      </div>
-    </div>
-  )
-}
-
-function SymptomRow({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: SymptomLevel
-  onChange: (level: SymptomLevel) => void
-}) {
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm">{label}</span>
-        <span className="text-xs text-muted">{LEVEL_LABELS[value]}</span>
-      </div>
-      <div className="grid grid-cols-4 gap-2">
-        {([0, 1, 2, 3] as SymptomLevel[]).map((level) => {
-          const active = value === level
-          const color =
-            level === 0
-              ? 'bg-mint/70'
-              : level === 1
-                ? 'bg-mint'
-                : level === 2
-                  ? 'bg-gold'
-                  : 'bg-coral text-white'
-          return (
-            <button
-              key={level}
-              type="button"
-              onClick={() => onChange(level)}
-              className={`min-h-10 rounded-xl text-sm ${
-                active ? `${color} font-semibold` : 'bg-paper text-muted'
-              }`}
-            >
-              {LEVEL_LABELS[level]}
-            </button>
-          )
-        })}
       </div>
     </div>
   )

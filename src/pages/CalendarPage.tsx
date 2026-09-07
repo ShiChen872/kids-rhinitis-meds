@@ -1,17 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { DoseCheckIn } from '../components/DoseCheckIn'
 import { Card, Screen } from '../components/Screen'
+import { SymptomEditor } from '../components/SymptomEditor'
 import { WeatherCompare } from '../components/WeatherCompare'
 import { formatLongDate, monthGrid, shiftMonth, todayStr } from '../lib/date'
 import { useAppState } from '../lib/storage'
-import {
-  LEVEL_LABELS,
-  OVERALL_LABELS,
-  SYMPTOM_KEYS,
-  SYMPTOM_LABELS,
-  emptySymptomLog,
-  maxSymptomLevel,
-} from '../lib/types'
+import { maxSymptomLevel } from '../lib/types'
 import { useWeatherBackfill } from '../lib/useWeatherBackfill'
 import { isRainy } from '../lib/weather'
 
@@ -45,9 +39,7 @@ export function CalendarPage({ focusDate }: { focusDate?: string | null }) {
 
   const detailDate = selected
   const detailWeather = detailDate ? weatherLogs[detailDate] : undefined
-  const detailSymptoms = detailDate
-    ? (symptomLogs[detailDate] ?? emptySymptomLog(detailDate))
-    : undefined
+  const detailSymptoms = detailDate ? symptomLogs[detailDate] : undefined
 
   return (
     <Screen title="日历" subtitle={`${year}年${month}月`}>
@@ -125,7 +117,7 @@ export function CalendarPage({ focusDate }: { focusDate?: string | null }) {
         <p className="mt-3 text-center text-xs text-muted">圆点：症状轻重 · 红点：降温或下雨</p>
       </Card>
 
-      {detailDate && detailSymptoms ? (
+      {detailDate ? (
         <Card className="mt-4">
           <h2 className="font-semibold">{formatLongDate(detailDate)}</h2>
           {detailWeather ? (
@@ -151,23 +143,12 @@ export function CalendarPage({ focusDate }: { focusDate?: string | null }) {
                   doseLogs={doseLogs}
                   canEdit
                 />
+                <h3 className="mt-5 text-sm font-medium text-muted">当天感觉</h3>
+                <p className="mb-2 mt-1 text-xs text-muted">可补记症状；点轻重即可改。</p>
+                <SymptomEditor date={detailDate} log={detailSymptoms} />
               </>
             )}
           </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-            {SYMPTOM_KEYS.map((key) => (
-              <p key={key} className="rounded-2xl bg-paper px-3 py-2">
-                {SYMPTOM_LABELS[key]} · {LEVEL_LABELS[detailSymptoms[key]]}
-              </p>
-            ))}
-          </div>
-          <p className="mt-3 text-sm text-muted">
-            整体：{detailSymptoms.overall ? OVERALL_LABELS[detailSymptoms.overall] : '未填'}
-          </p>
-          {detailSymptoms.note ? (
-            <p className="mt-2 text-sm">备注：{detailSymptoms.note}</p>
-          ) : null}
         </Card>
       ) : null}
     </Screen>
