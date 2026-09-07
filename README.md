@@ -6,6 +6,8 @@
 
 完整步骤见 [DEPLOY.md](DEPLOY.md)。不要用 GitHub Pages 给国内访问。
 
+药物档案可填一瓶容量和每次用量（例如西替利嗪 150 / 300 毫升），按打卡估算何时换新。
+
 ```bash
 npm install
 npm run dev

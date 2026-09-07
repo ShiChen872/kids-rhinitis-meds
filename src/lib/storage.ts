@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import {
   defaultState,
   emptySymptomLog,
+  normalizeMedication,
   STORAGE_KEY,
   type AppState,
   type Medication,
@@ -28,7 +29,7 @@ function load(): AppState {
     const parsed = JSON.parse(raw) as Partial<AppState>
     const base = defaultState()
     return {
-      medications: parsed.medications ?? base.medications,
+      medications: parseMedications(parsed.medications),
       doseLogs: parsed.doseLogs ?? base.doseLogs,
       symptomLogs: parsed.symptomLogs ?? base.symptomLogs,
       weatherLogs: parsed.weatherLogs ?? base.weatherLogs,
@@ -76,7 +77,14 @@ export function updateSettings(patch: Partial<Settings>) {
 }
 
 export function addMedication(input: Omit<Medication, 'id'>) {
-  const med: Medication = { ...input, id: createId() }
+  const med: Medication = {
+    ...input,
+    id: createId(),
+    bottleOpenedAt:
+      input.packAmount && input.doseAmount
+        ? input.bottleOpenedAt ?? new Date().toISOString()
+        : null,
+  }
   emit({ ...state, medications: [...state.medications, med] })
 }
 
@@ -92,6 +100,10 @@ export function removeMedication(id: string) {
     ...state,
     medications: state.medications.filter((m) => m.id !== id),
   })
+}
+
+export function openNewBottle(id: string) {
+  updateMedication(id, { bottleOpenedAt: new Date().toISOString() })
 }
 
 export function logDose(medicationId: string, date = todayStr()) {
@@ -150,10 +162,20 @@ export function parseBackup(raw: string): AppState {
   if (!parsed || typeof parsed !== 'object') throw new Error('备份格式不对')
   const base = defaultState()
   return {
-    medications: Array.isArray(parsed.medications) ? parsed.medications : base.medications,
+    medications: parseMedications(parsed.medications),
     doseLogs: Array.isArray(parsed.doseLogs) ? parsed.doseLogs : base.doseLogs,
     symptomLogs: parsed.symptomLogs ?? base.symptomLogs,
     weatherLogs: parsed.weatherLogs ?? base.weatherLogs,
     settings: { ...base.settings, ...parsed.settings },
   }
+}
+
+function parseMedications(value: unknown): Medication[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') return []
+    const raw = item as Partial<Medication>
+    if (typeof raw.id !== 'string' || typeof raw.name !== 'string') return []
+    return [normalizeMedication(raw as Partial<Medication> & Pick<Medication, 'id' | 'name'>)]
+  })
 }

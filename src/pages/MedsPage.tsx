@@ -4,6 +4,7 @@ import { todayStr } from '../lib/date'
 import {
   addMedication,
   getState,
+  openNewBottle,
   parseBackup,
   removeMedication,
   replaceState,
@@ -14,10 +15,29 @@ import {
 import {
   FORM_LABELS,
   MED_FORMS,
+  PACK_UNIT_LABELS,
+  PACK_UNITS,
+  defaultPackUnit,
   type MedForm,
   type Medication,
+  type PackUnit,
 } from '../lib/types'
+import { bottleStatus, bottleSummary, prettyAmount } from '../lib/bottle'
 import { geocodeCity } from '../lib/weather'
+
+const PACK_PRESETS: Record<MedForm, number[]> = {
+  spray: [60, 120, 200],
+  oral: [150, 300],
+  drops: [10, 15],
+  other: [10, 30],
+}
+
+const DOSE_PRESETS: Record<MedForm, number[]> = {
+  spray: [1, 2],
+  oral: [2.5, 5, 10],
+  drops: [2, 4],
+  other: [1, 2],
+}
 
 const emptyForm = {
   name: '',
@@ -25,10 +45,13 @@ const emptyForm = {
   timesPerDay: 2,
   doseLabel: '',
   active: true,
+  packAmount: '',
+  packUnit: 'spray' as PackUnit,
+  doseAmount: '',
 }
 
 export function MedsPage() {
-  const { medications, settings } = useAppState()
+  const { medications, doseLogs, settings } = useAppState()
   const [editing, setEditing] = useState<Medication | 'new' | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [cityDraft, setCityDraft] = useState(settings.city)
@@ -54,6 +77,9 @@ export function MedsPage() {
       timesPerDay: med.timesPerDay,
       doseLabel: med.doseLabel,
       active: med.active,
+      packAmount: med.packAmount != null ? String(med.packAmount) : '',
+      packUnit: med.packUnit ?? defaultPackUnit(med.form),
+      doseAmount: med.doseAmount != null ? String(med.doseAmount) : '',
     })
     setEditing(med)
   }
@@ -65,12 +91,30 @@ export function MedsPage() {
       return
     }
     const timesPerDay = Math.min(12, Math.max(1, Number(form.timesPerDay) || 1))
+    const packAmount = Number(form.packAmount)
+    const doseAmount = Number(form.doseAmount)
+    const packFilled = form.packAmount.trim() !== ''
+    const doseFilled = form.doseAmount.trim() !== ''
+    if (packFilled !== doseFilled || (packFilled && (!(packAmount > 0) || !(doseAmount > 0)))) {
+      setMessage('一瓶容量和每次用量要一起填，都填大于 0 的数字')
+      return
+    }
+    const hasBottle = packFilled && packAmount > 0 && doseAmount > 0
+    const openedAt = !hasBottle
+      ? null
+      : editing && editing !== 'new' && editing.bottleOpenedAt
+        ? editing.bottleOpenedAt
+        : new Date().toISOString()
     const payload = {
       name,
       form: form.form,
       timesPerDay,
       doseLabel: form.doseLabel.trim(),
       active: form.active,
+      packAmount: hasBottle ? packAmount : null,
+      packUnit: hasBottle ? form.packUnit : null,
+      doseAmount: hasBottle ? doseAmount : null,
+      bottleOpenedAt: openedAt,
     }
     if (editing === 'new') addMedication(payload)
     else if (editing) updateMedication(editing.id, payload)
@@ -141,7 +185,9 @@ export function MedsPage() {
             <p className="text-sm text-muted">还没有药物。先加一种，比如鼻喷或口服抗过敏药。</p>
           </Card>
         ) : (
-          medications.map((med) => (
+          medications.map((med) => {
+            const status = bottleStatus(med, doseLogs)
+            return (
             <Card key={med.id}>
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -150,6 +196,13 @@ export function MedsPage() {
                     {FORM_LABELS[med.form]} · 每天 {med.timesPerDay} 次
                     {med.doseLabel ? ` · ${med.doseLabel}` : ''}
                   </p>
+                  {status ? (
+                    <p className={`mt-2 text-sm ${status.low ? 'text-coral' : 'text-muted'}`}>
+                      {bottleSummary(status)}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-xs text-muted">编辑时可填一瓶容量，用来算何时换新</p>
+                  )}
                   <p className="mt-1 text-xs text-muted">{med.active ? '启用中' : '已暂停'}</p>
                 </div>
                 <button
@@ -160,8 +213,22 @@ export function MedsPage() {
                   编辑
                 </button>
               </div>
+              {status ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!window.confirm('按刚开的新一瓶重新计算剩余量，确定吗？')) return
+                    openNewBottle(med.id)
+                    setMessage('已按新一瓶开始计算')
+                  }}
+                  className="mt-3 min-h-11 w-full rounded-2xl bg-paper text-sm font-medium"
+                >
+                  开了新一瓶
+                </button>
+              ) : null}
             </Card>
-          ))
+            )
+          })
         )}
         <button
           type="button"
@@ -210,7 +277,7 @@ export function MedsPage() {
       <Card className="mt-4">
         <h2 className="font-semibold">备份</h2>
         <p className="mt-2 text-sm text-muted">
-          记录只在这台手机里。换机或清理 Safari 前请先导出。
+          记录默认只在这台手机里。换机或清缓存前请导出备份。
         </p>
         <button
           type="button"
@@ -277,7 +344,9 @@ export function MedsPage() {
                 <button
                   key={f}
                   type="button"
-                  onClick={() => setForm({ ...form, form: f })}
+                  onClick={() =>
+                    setForm({ ...form, form: f, packUnit: defaultPackUnit(f) })
+                  }
                   className={`min-h-11 rounded-2xl text-sm ${
                     form.form === f ? 'bg-teal text-white' : 'bg-paper'
                   }`}
@@ -306,6 +375,75 @@ export function MedsPage() {
                 className="mt-2 min-h-12 w-full rounded-2xl border border-line bg-paper px-3 text-base text-ink outline-none"
               />
             </label>
+            <p className="mt-4 text-sm font-medium text-ink">这一瓶怎么算</p>
+            <p className="mt-1 text-xs text-muted">
+              用来估算何时换新。口服液常见 150 毫升、300 毫升；鼻喷按喷数。可不填。
+            </p>
+            <p className="mt-3 text-sm text-muted">单位</p>
+            <div className="mt-2 grid grid-cols-4 gap-2">
+              {PACK_UNITS.map((unit) => (
+                <button
+                  key={unit}
+                  type="button"
+                  onClick={() => setForm({ ...form, packUnit: unit })}
+                  className={`min-h-11 rounded-2xl text-sm ${
+                    form.packUnit === unit ? 'bg-teal text-white' : 'bg-paper'
+                  }`}
+                >
+                  {PACK_UNIT_LABELS[unit]}
+                </button>
+              ))}
+            </div>
+            <label className="mt-4 block text-sm text-muted">
+              一瓶容量
+              <input
+                inputMode="decimal"
+                value={form.packAmount}
+                onChange={(e) => setForm({ ...form, packAmount: e.target.value })}
+                placeholder={form.form === 'oral' ? '例如 150' : '例如 120'}
+                className="mt-2 min-h-12 w-full rounded-2xl border border-line bg-paper px-3 text-base text-ink outline-none"
+              />
+            </label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {PACK_PRESETS[form.form].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setForm({ ...form, packAmount: String(n) })}
+                  className={`min-h-10 rounded-xl px-3 text-sm ${
+                    form.packAmount === String(n) ? 'bg-teal text-white' : 'bg-paper'
+                  }`}
+                >
+                  {prettyAmount(n)}
+                  {PACK_UNIT_LABELS[form.packUnit]}
+                </button>
+              ))}
+            </div>
+            <label className="mt-4 block text-sm text-muted">
+              每次打卡用掉
+              <input
+                inputMode="decimal"
+                value={form.doseAmount}
+                onChange={(e) => setForm({ ...form, doseAmount: e.target.value })}
+                placeholder={form.form === 'oral' ? '例如 5' : '例如 2'}
+                className="mt-2 min-h-12 w-full rounded-2xl border border-line bg-paper px-3 text-base text-ink outline-none"
+              />
+            </label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {DOSE_PRESETS[form.form].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setForm({ ...form, doseAmount: String(n) })}
+                  className={`min-h-10 rounded-xl px-3 text-sm ${
+                    form.doseAmount === String(n) ? 'bg-teal text-white' : 'bg-paper'
+                  }`}
+                >
+                  {prettyAmount(n)}
+                  {PACK_UNIT_LABELS[form.packUnit]}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
               onClick={() => setForm({ ...form, active: !form.active })}

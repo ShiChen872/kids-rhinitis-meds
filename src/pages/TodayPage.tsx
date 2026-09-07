@@ -1,5 +1,6 @@
 import { Card } from '../components/Screen'
 import { WeatherCompare } from '../components/WeatherCompare'
+import { bottleStatus, bottleSummary } from '../lib/bottle'
 import { formatLongDate, formatTime, todayStr } from '../lib/date'
 import {
   logDose,
@@ -86,6 +87,7 @@ export function TodayPage({ onGoMeds }: { onGoMeds: () => void }) {
                   .sort((a, b) => a.takenAt.localeCompare(b.takenAt))
                 const used = todays.length
                 const over = used > med.timesPerDay
+                const bottle = bottleStatus(med, doseLogs)
                 return (
                   <Card key={med.id}>
                     <div className="flex items-start justify-between gap-3">
@@ -103,6 +105,11 @@ export function TodayPage({ onGoMeds }: { onGoMeds: () => void }) {
                     {todays.length > 0 ? (
                       <p className="mt-2 text-xs text-muted">
                         {todays.map((d) => formatTime(d.takenAt)).join('  ·  ')}
+                      </p>
+                    ) : null}
+                    {bottle ? (
+                      <p className={`mt-2 text-xs ${bottle.low ? 'text-coral' : 'text-muted'}`}>
+                        {bottleSummary(bottle)}
                       </p>
                     ) : null}
                     <div className="mt-3 grid grid-cols-2 gap-2">

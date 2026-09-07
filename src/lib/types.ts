@@ -8,6 +8,23 @@ export const FORM_LABELS: Record<MedForm, string> = {
   other: '其他',
 }
 
+export const PACK_UNITS = ['ml', 'spray', 'drop', 'tablet'] as const
+export type PackUnit = (typeof PACK_UNITS)[number]
+
+export const PACK_UNIT_LABELS: Record<PackUnit, string> = {
+  ml: '毫升',
+  spray: '喷',
+  drop: '滴',
+  tablet: '片',
+}
+
+export function defaultPackUnit(form: MedForm): PackUnit {
+  if (form === 'spray') return 'spray'
+  if (form === 'drops') return 'drop'
+  if (form === 'oral') return 'ml'
+  return 'tablet'
+}
+
 export type Medication = {
   id: string
   name: string
@@ -15,6 +32,10 @@ export type Medication = {
   timesPerDay: number
   doseLabel: string
   active: boolean
+  packAmount: number | null
+  packUnit: PackUnit | null
+  doseAmount: number | null
+  bottleOpenedAt: string | null
 }
 
 export type DoseLog = {
@@ -134,4 +155,23 @@ export function maxSymptomLevel(log: SymptomLog | undefined): SymptomLevel {
     log.cough,
     log.sleep,
   ) as SymptomLevel
+}
+
+export function normalizeMedication(raw: Partial<Medication> & Pick<Medication, 'id' | 'name'>): Medication {
+  const packUnit =
+    raw.packUnit && (PACK_UNITS as readonly string[]).includes(raw.packUnit) ? raw.packUnit : null
+  const packAmount = typeof raw.packAmount === 'number' && raw.packAmount > 0 ? raw.packAmount : null
+  const doseAmount = typeof raw.doseAmount === 'number' && raw.doseAmount > 0 ? raw.doseAmount : null
+  return {
+    id: raw.id,
+    name: raw.name,
+    form: raw.form && (MED_FORMS as readonly string[]).includes(raw.form) ? raw.form : 'other',
+    timesPerDay: Math.min(12, Math.max(1, Number(raw.timesPerDay) || 1)),
+    doseLabel: typeof raw.doseLabel === 'string' ? raw.doseLabel : '',
+    active: raw.active !== false,
+    packAmount,
+    packUnit,
+    doseAmount,
+    bottleOpenedAt: typeof raw.bottleOpenedAt === 'string' && raw.bottleOpenedAt ? raw.bottleOpenedAt : null,
+  }
 }
