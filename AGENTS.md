@@ -3,8 +3,8 @@
 给太太 iPhone 记儿子过敏性鼻炎。数据在手机里。
 
 - 源码：GitHub `main`（Cursor 改并 push）
-- 发布：新加坡轻量 Hermes 按 [DEPLOY.md](DEPLOY.md) pull + 编译
-- 访问：`http://43.134.226.112/yao/`（不要 GitHub Pages）
+- 发布：自有服务器上 Hermes 按 [DEPLOY.md](DEPLOY.md) pull + 编译
+- 访问：该机站点下的 `/yao/`（不要 GitHub Pages）
 
 ## 开发
 

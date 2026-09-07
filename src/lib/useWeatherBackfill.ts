@@ -4,6 +4,7 @@ import { getState, saveWeathers, useAppState } from './storage'
 import { fetchWeatherRange } from './weather'
 
 export const RECENT_DAYS = 7
+export const BACKFILL_DAYS = 14
 
 export function useWeatherBackfill() {
   const { settings } = useAppState()
@@ -15,7 +16,7 @@ export function useWeatherBackfill() {
     const { city, latitude, longitude } = settings
     if (latitude == null || longitude == null) return
 
-    const dates = lastNDates(RECENT_DAYS)
+    const dates = lastNDates(BACKFILL_DAYS)
     const cached = getState().weatherLogs
     const missing = dates.some((day) => {
       const log = cached[day]

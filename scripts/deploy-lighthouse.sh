@@ -48,7 +48,6 @@ else
 fi
 REMOTE
 
-IP="$(ssh -G "$HOST" | awk '/^hostname / {print $2; exit}')"
 echo
-echo "打开：http://${IP}/yao/"
+echo "打开该机站点下的 /yao/"
 echo "用 Safari 打开后：分享 → 添加到主屏幕"

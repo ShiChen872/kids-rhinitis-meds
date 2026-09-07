@@ -1,5 +1,5 @@
 ---
-description: 幼儿鼻炎用药：GitHub 源码 + 腾讯云 /yao/ 发布，每个会话遵守
+description: 幼儿鼻炎用药：GitHub 源码 + 自有服务器 /yao/ 发布，每个会话遵守
 alwaysApply: true
 ---
 
@@ -10,24 +10,25 @@ alwaysApply: true
 ## 分工
 
 - **GitHub `main`**：源码。Cursor 改并 push。GitHub 已配好。
-- **Hermes**：可直接从仓库远程更新腾讯云 `/yao/`（`DEPLOY.md`「以后更新」）。轻量已对接，入口已测过可用。
-- **太太访问**：`http://43.134.226.112/yao/`（不要 GitHub Pages）
+- **Hermes**：可直接从仓库远程更新自有服务器 `/yao/`（`DEPLOY.md`「以后更新」）。入口已测过可用。
+- **太太访问**：自有站点下的 `/yao/`（不要 GitHub Pages）。不要把公网 IP 写进仓库。
 - **数据**：手机 `localStorage` key `rhinitis-log-v1`；HTTP 下用 `createId()`，不要用 `crypto.randomUUID`
 
 ## 产品
 
-三页：今日（打卡/症状/天气/近7天对照）/ 日历（对照 + 变天标记，可补记、改钟点）/ 药物（可填一瓶容量，估算何时换新）。Safari 加到主屏幕，不要用微信内置浏览器。
+三页：今日（打卡/症状/天气/近7天对照）/ 日历（对照 + 变天标记，可补记、改钟点）/ 药物（换瓶估算、近两周给医生看的摘要）。Safari 加到主屏幕，不要用微信内置浏览器。
 
 ## 不要做
 
 - 不要把 GitHub Pages 当入口；不要 Vercel/Netlify 当国内入口
 - 不要改 Hermes 微信网关；不要新开 8080；不要动邮箱 MX
+- 不要把公网 IP、完整公网 URL 写进 README / 发版说明 / 源码注释
 - 不要做提醒、小程序（第一版）
 - **家庭账本只在本机试验，不要部署、不要 push 这一刀**
 
 ## 服务器
 
-- SSH：`OpenClaw-Server` / `ubuntu@43.134.226.112`
+- SSH：本机主机名 `OpenClaw-Server`（IP 只放在本机 SSH 配置里）
 - 源码：`/home/ubuntu/kids-rhinitis-meds`
 - 静态：`/var/www/yao` → `/yao/`
 - 手册：`DEPLOY.md`。80 冲突时只并 `location /yao/`，禁止覆盖 Hermes 的 server

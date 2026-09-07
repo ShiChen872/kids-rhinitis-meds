@@ -1,12 +1,12 @@
 # 部署手册（给 Hermes / 服务器）
 
-源码在 GitHub，太太访问的是腾讯云轻量上的静态页。不要用 GitHub Pages。
+源码在 GitHub，日常访问的是自有服务器上的静态页。不要用 GitHub Pages。
 
-- 仓库：见 README 顶部 GitHub 地址（默认 `main`）
-- 服务器：腾讯云轻量新加坡，SSH 本机主机名 `OpenClaw-Server`（`ubuntu@43.134.226.112`）
+- 仓库：见 GitHub 仓库默认分支 `main`
+- 服务器：用本机 SSH 主机名登录（不要把公网 IP 写进仓库）
 - 源码目录（服务器上）：`/home/ubuntu/kids-rhinitis-meds`
 - 网站目录：`/var/www/yao`
-- 访问：`http://43.134.226.112/yao/`
+- 访问：该机已有站点下的 `/yao/`
 - 禁止：改 Hermes 进程、改微信网关、新开 8080、动邮箱 DNS
 
 ## 第一次
@@ -32,7 +32,7 @@ location /yao/ {
 }
 ```
 
-然后 `sudo nginx -t && sudo systemctl reload nginx`。腾讯云安全组放行 80。
+然后 `sudo nginx -t && sudo systemctl reload nginx`。安全组放行 80。
 
 ## 以后更新（Hermes 每次发版执行这些）
 

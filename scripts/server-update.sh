@@ -13,4 +13,4 @@ mkdir -p "$DEST"
 rsync -a --delete "$ROOT/dist/" "$DEST/"
 
 echo "published $(git rev-parse --short HEAD) -> $DEST"
-echo "open http://43.134.226.112/yao/"
+echo "open /yao/ on this host"

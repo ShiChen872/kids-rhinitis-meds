@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { ClinicReportCard } from '../components/ClinicReportCard'
 import { Card, Screen } from '../components/Screen'
+import { bottleStatus, bottleSummary, prettyAmount } from '../lib/bottle'
+import { buildClinicReport } from '../lib/clinic'
 import { todayStr } from '../lib/date'
 import {
   addMedication,
@@ -22,8 +25,8 @@ import {
   type Medication,
   type PackUnit,
 } from '../lib/types'
-import { bottleStatus, bottleSummary, prettyAmount } from '../lib/bottle'
 import { geocodeCity } from '../lib/weather'
+import { useWeatherBackfill } from '../lib/useWeatherBackfill'
 
 const PACK_PRESETS: Record<MedForm, number[]> = {
   spray: [60, 120, 200],
@@ -57,7 +60,9 @@ export function MedsPage() {
   const [cityDraft, setCityDraft] = useState(settings.city)
   const [childDraft, setChildDraft] = useState(settings.childName)
   const [message, setMessage] = useState('')
+  const [showClinic, setShowClinic] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  useWeatherBackfill()
 
   useEffect(() => {
     if (!message) return
@@ -275,6 +280,20 @@ export function MedsPage() {
       </Card>
 
       <Card className="mt-4">
+        <h2 className="font-semibold">给医生看</h2>
+        <p className="mt-2 text-sm text-muted">
+          近两周用药次数、症状和变天，截图或复制文字即可。
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowClinic(true)}
+          className="mt-3 min-h-12 w-full rounded-2xl bg-teal text-base font-medium text-white"
+        >
+          查看近两周摘要
+        </button>
+      </Card>
+
+      <Card className="mt-4">
         <h2 className="font-semibold">备份</h2>
         <p className="mt-2 text-sm text-muted">
           记录默认只在这台手机里。换机或清缓存前请导出备份。
@@ -318,6 +337,10 @@ export function MedsPage() {
       <p className="mt-6 px-1 pb-4 text-center text-xs leading-5 text-muted">
         本应用仅作个人用药与症状记录，不能替代医嘱。
       </p>
+
+      {showClinic ? (
+        <ClinicReportCard report={buildClinicReport(getState())} onClose={() => setShowClinic(false)} />
+      ) : null}
 
       {message ? (
         <p className="fixed bottom-24 left-1/2 z-20 -translate-x-1/2 rounded-full bg-ink px-4 py-2 text-sm text-white">
