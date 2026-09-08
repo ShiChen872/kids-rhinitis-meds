@@ -1,6 +1,7 @@
 import { Card } from './Screen'
 import { bottleStatus, bottleSummary } from '../lib/bottle'
 import { formatTime } from '../lib/date'
+import { missingDoseLine } from '../lib/nudge'
 import { logDose, undoLastDose, updateDoseTime } from '../lib/storage'
 import { FORM_LABELS, type DoseLog, type Medication } from '../lib/types'
 
@@ -46,6 +47,7 @@ export function DoseCheckIn({
           .sort((a, b) => a.takenAt.localeCompare(b.takenAt))
         const used = logs.length
         const over = used > med.timesPerDay
+        const missing = missingDoseLine(med.timesPerDay, used)
         const bottle = showBottle ? bottleStatus(med, doseLogs) : null
         const body = (
             <>
@@ -60,6 +62,7 @@ export function DoseCheckIn({
                 已用 {used}/{med.timesPerDay}
               </p>
             </div>
+            {missing ? <p className="mt-2 text-sm text-coral">{missing}</p> : null}
             {over ? <p className="mt-2 text-xs text-coral">已超医嘱，仍可记录</p> : null}
             {logs.length > 0 ? (
               <div className="mt-2 flex flex-wrap gap-2">
@@ -73,7 +76,7 @@ export function DoseCheckIn({
                   ),
                 )}
               </div>
-            ) : (
+            ) : missing ? null : (
               <p className="mt-2 text-xs text-muted">{canEdit ? '还没记' : '当天未打卡'}</p>
             )}
             {logs.length > 0 && canEdit ? (

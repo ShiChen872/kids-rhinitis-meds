@@ -3,6 +3,7 @@ import { DoseCheckIn } from '../components/DoseCheckIn'
 import { SymptomEditor } from '../components/SymptomEditor'
 import { WeatherCompare } from '../components/WeatherCompare'
 import { addDays, formatLongDate, todayStr } from '../lib/date'
+import { incompleteDoses } from '../lib/nudge'
 import { useAppState } from '../lib/storage'
 import { useWeatherBackfill } from '../lib/useWeatherBackfill'
 import { isRainy } from '../lib/weather'
@@ -21,10 +22,8 @@ export function TodayPage({
   const symptoms = symptomLogs[date]
   const activeMeds = medications.filter((m) => m.active)
   const weatherError = useWeatherBackfill()
-  const yesterdayIncomplete = activeMeds.some((med) => {
-    const used = doseLogs.filter((d) => d.medicationId === med.id && d.date === yesterday).length
-    return used < med.timesPerDay
-  })
+  const todayMissing = incompleteDoses(activeMeds, doseLogs, date)
+  const yesterdayIncomplete = incompleteDoses(activeMeds, doseLogs, yesterday).length > 0
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -64,6 +63,11 @@ export function TodayPage({
 
         <div>
           <h2 className="mb-2 px-1 text-sm font-medium text-muted">按医嘱打卡</h2>
+          {todayMissing.length > 0 ? (
+            <p className="mb-3 rounded-2xl bg-gold/40 px-4 py-3 text-sm font-medium">
+              {todayMissing.map((item) => `${item.name}：${item.line}`).join('；')}
+            </p>
+          ) : null}
           {activeMeds.length === 0 ? (
             <Card>
               <p className="text-sm text-muted">还没有启用中的药物。</p>
